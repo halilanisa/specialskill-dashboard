@@ -59,9 +59,9 @@ header {{
 }}
 
 div[data-testid="stTextInputRootElement"] {{
-    border:1px solid #D8DEE9 !important;
+    border:1px solid #D1D5DB !important;
     border-radius:12px !important;
-    background:white !important;
+    background:#F3F4F6 !important;
     min-height:56px !important;
 }}
 
@@ -80,8 +80,28 @@ div[data-testid="stTextInputRootElement"]:focus-within {{
     line-height:56px !important;
     padding:0 16px !important;
     border:none !important;
-    background:transparent !important;
+    background:#F3F4F6 !important;
+    color:#111827 !important;
     box-shadow:none !important;
+}}
+
+.stTextInput button {{
+    border:none !important;
+    background:#F3F4F6 !important;
+}}
+
+.stTextInput button:hover {{
+    background:#F3F4F6 !important;
+}}
+
+.stTextInput button svg {{
+    color:#0B2B6B !important;
+    fill:#0B2B6B !important;
+}}
+
+.stTextInput button:hover svg {{
+    color:#1847A3 !important;
+    fill:#1847A3 !important;
 }}
 
 .stTextInput input::placeholder {{

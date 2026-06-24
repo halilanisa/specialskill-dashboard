@@ -22,6 +22,14 @@ df = st.session_state["data"].copy()
 st.markdown("""
 <style>
 
+.stApp{
+    background:white !important;
+}
+
+[data-testid="stAppViewContainer"]{
+    background:white !important;
+}
+
 #MainMenu,
 footer,
 header{
@@ -84,7 +92,12 @@ with col3:
         st.session_state.clear()
         st.switch_page("app.py")
 
-st.divider()
+st.markdown("""
+<hr style="
+    margin-top:5px;
+    margin-bottom:10px;
+">
+""", unsafe_allow_html=True)
 
 # PREPROCESS
 if "timestamp" in df.columns:

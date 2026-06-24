@@ -12,6 +12,14 @@ st.set_page_config(
 st.markdown("""
 <style>
 
+.stApp{
+    background:white !important;
+}
+
+[data-testid="stAppViewContainer"]{
+    background:white !important;
+}
+
 /* Sidebar */
 [data-testid="stSidebar"]{
     display:none;
@@ -41,6 +49,91 @@ footer{
 .block-container{
     padding-top:1rem;
     max-width:100%;
+}
+
+/* File Uploader */
+[data-testid="stFileUploaderDropzone"]{
+    background:#F3F4F6 !important;
+    border:2px dashed #CBD5E1 !important;
+}
+
+[data-testid="stFileUploaderDropzone"] *{
+    color:#0B2B6B !important;
+}
+
+/* Tombol Browse Files */
+[data-testid="stFileUploaderDropzone"] button{
+    background:#E0E7FF !important;
+    color:#0B2B6B !important;
+    border:1px solid #93C5FD !important;
+}
+
+/* Number Input */
+[data-testid="stNumberInputContainer"]{
+    background:#F3F4F6 !important;
+    border-radius:12px !important;
+}
+
+[data-testid="stNumberInputContainer"] input{
+    background:#F3F4F6 !important;
+    color:#0B2B6B !important;
+}
+
+/* Tombol + dan - */
+[data-testid="stNumberInputContainer"] button{
+    background:#F3F4F6 !important;
+    color:#0B2B6B !important;
+    border:none !important;
+}
+
+[data-testid="stNumberInputContainer"] button:hover{
+    background:#E5E7EB !important;
+    color:#0B2B6B !important;
+}
+            
+/* Tombol Keluar */
+
+.stButton button {
+    background:white !important;
+    color:#0B2B6B !important;
+    border:1px solid #D1D5DB !important;
+    border-radius:12px !important;
+    font-weight:700 !important;
+}
+
+.stButton button:hover {
+    background:#F3F4F6 !important;
+    color:#0B2B6B !important;
+    border:1px solid #CBD5E1 !important;
+}
+            
+/* Preview Data */
+h3{
+    color:#0B2B6B !important;
+}
+
+/* Dataframe */
+[data-testid="stDataFrame"]{
+    background:white !important;
+    border:1px solid #E5E7EB !important;
+    border-radius:12px !important;
+}
+
+/* Isi sel tabel */
+[data-testid="stDataFrame"] td{
+    color:#374151 !important;
+    background:white !important;
+}
+
+/* Header tabel */
+[data-testid="stDataFrame"] th{
+    color:#0B2B6B !important;
+    background:#F3F4F6 !important;
+}
+
+/* Seluruh teks dataframe */
+[data-testid="stDataFrame"] div{
+    color:#374151 !important;
 }
 
 </style>
@@ -132,7 +225,8 @@ if uploaded_file is not None:
 
         st.dataframe(
             df.head(),
-            use_container_width=True
+            use_container_width=True,
+            hide_index=True
         )
 
         if st.button(
