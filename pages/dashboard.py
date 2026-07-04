@@ -1,6 +1,9 @@
 import streamlit as st
 import pandas as pd
 import base64
+SPREADSHEETS = {
+    "Master Data (Free Event)": "https://docs.google.com/spreadsheets/d/14dyD16lRgLZxBLAHiE5BLXN2XAyJyWDAK59KTfbnBaM/export?format=csv&gid=854838440"
+}
 
 st.set_page_config(
     page_title="Dashboard Analitik",
@@ -147,14 +150,14 @@ def get_base64_image(path):
 logo = get_base64_image("specialskill.png")
 
 # HEADER
-col1, col2 = st.columns([10, 1])
+col1, col2, col3 = st.columns([9, 1, 1])
 
 with col1:
     st.markdown(f"""
     <div style="display:flex;align-items:center;gap:20px;">
         <img src="data:image/png;base64,{logo}" width="140">
         <span style="
-            font-size:30px;
+            font-size:20px;
             font-weight:700;
             color:#0A2463;">
             Dashboard Analitik
@@ -163,9 +166,24 @@ with col1:
     """, unsafe_allow_html=True)
 
 with col2:
-    if st.button("Keluar", use_container_width=True):
+    if st.button(
+        "",
+        icon=":material/history:",
+        use_container_width=True,
+        help="History"
+    ):
+        st.switch_page("pages/history.py")
+
+with col3:
+    if st.button(
+        "",
+        icon=":material/logout:",
+        use_container_width=True,
+        help="Keluar"
+    ):
         st.session_state.clear()
         st.switch_page("app.py")
+
 
 st.markdown("""
 <hr style="
@@ -187,9 +205,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # FILE UPLOADER
-uploaded_file = st.file_uploader(
-    "Upload atau seret file ke sini",
-    type=["xlsx", "xls", "csv"]
+selected_sheet = st.selectbox(
+    "Pilih Spreadsheet",
+    list(SPREADSHEETS.keys())
 )
 
 # INFO BOX
@@ -207,37 +225,63 @@ target_pendaftar = st.number_input(
 )
 
 # PROCESS FILE
-if uploaded_file is not None:
+try:
+    url = SPREADSHEETS[selected_sheet]
 
-    try:
-        if uploaded_file.name.endswith(".csv"):
-            df = pd.read_csv(uploaded_file)
-        else:
-            df = pd.read_excel(uploaded_file)
+    df = pd.read_csv(url)
 
-        st.success(
-            f"File berhasil diunggah ({len(df)} baris data)"
-        )
+    total_data = len(df)
 
-        st.session_state["data"] = df
+    event_list = (
+        df["event_name"]
+        .dropna()
+        .sort_values()
+        .unique()
+    )
 
-        st.subheader("Preview Data")
+    selected_event = st.selectbox(
+        "Pilih Event",
+        event_list
+    )
 
-        st.dataframe(
-            df.head(),
-            use_container_width=True,
-            hide_index=True
-        )
+    df_filtered = df[df["event_name"] == selected_event]
 
-        if st.button(
-            "Generate Dashboard",
-            use_container_width=True,
-            type="primary"
-        ):
-            st.session_state["data"] = df
-            st.session_state["file_name"] = uploaded_file.name
-            st.session_state["target"] = target_pendaftar
-            st.switch_page("pages/analytics.py")
+    st.success(
+        f"Total Spreadsheet: {total_data} baris | "
+        f"Event '{selected_event}': {len(df_filtered)} baris"
+    )
 
-    except Exception as e:
-        st.error(f"Gagal membaca file: {e}")
+    st.session_state["data"] = df_filtered
+
+    st.markdown("""
+    <p style="
+        font-size:14px;
+        font-weight:400;
+        color:#31333F;
+        margin-bottom:0.2rem;
+    ">
+        Preview Data
+    </p>
+    """, unsafe_allow_html=True)
+
+    st.dataframe(
+        df_filtered.head(),
+        use_container_width=True,
+        hide_index=True
+    )
+
+    if st.button(
+        "Generate Dashboard",
+        use_container_width=True,
+        type="primary"
+    ):
+        st.session_state["data"] = df_filtered
+        st.session_state["file_name"] = selected_sheet
+        st.session_state["target"] = target_pendaftar
+        st.session_state["event_name"] = selected_event
+        st.session_state["saved"] = False
+
+        st.switch_page("pages/analytics.py")
+
+except Exception as e:
+    st.error(f"Gagal membaca spreadsheet: {e}")
