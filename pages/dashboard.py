@@ -1,9 +1,31 @@
 import streamlit as st
 import pandas as pd
 import base64
-SPREADSHEETS = {
+import json
+import os
+
+JSON_FILE = "spreadsheets.json"
+
+DEFAULT_SPREADSHEETS = {
     "Master Data (Free Event)": "https://docs.google.com/spreadsheets/d/14dyD16lRgLZxBLAHiE5BLXN2XAyJyWDAK59KTfbnBaM/export?format=csv&gid=854838440"
 }
+
+def load_spreadsheets():
+    if not os.path.exists(JSON_FILE):
+
+        with open(JSON_FILE, "w") as f:
+            json.dump(DEFAULT_SPREADSHEETS, f, indent=4)
+
+        return DEFAULT_SPREADSHEETS
+
+    with open(JSON_FILE, "r") as f:
+        return json.load(f)
+
+def save_spreadsheets(data):
+    with open(JSON_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+
+SPREADSHEETS = load_spreadsheets()
 
 st.set_page_config(
     page_title="Dashboard Analitik",
@@ -196,7 +218,7 @@ st.markdown("""
 st.markdown("""
 <div style="text-align:center;margin-top:30px;">
     <h1 style="color:#0A2463;">
-        Upload File Data
+        Unggah Data
     </h1>
     <p style="font-size:18px;color:#666;">
         Unggah file XLSX, XLS, CSV untuk menghasilkan dashboard otomatis
@@ -204,34 +226,119 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# FILE UPLOADER
+# TAMBAH SPREADSHEET
+
+if "show_form" not in st.session_state:
+    st.session_state.show_form = False
+
+# tombol tambah
+if st.button(
+    "Tambah Spreadsheet",
+    icon=":material/add:",
+    use_container_width=False
+):
+    st.session_state.show_form = True
+
+# FORM TAMBAH
+if st.session_state.show_form:
+
+    st.markdown("### Tambah Spreadsheet Baru")
+
+    new_name = st.text_input(
+        "Nama Spreadsheet",
+        placeholder="Contoh: Webinar AI"
+    )
+
+    new_link = st.text_input(
+        "Link Google Spreadsheet",
+        placeholder="https://docs.google.com/spreadsheets/..."
+    )
+
+    col_btn1, col_btn2, _ = st.columns([1, 1, 8])
+
+    with col_btn1:
+        save_clicked = st.button(
+            "Simpan",
+            use_container_width=True
+        )
+
+    with col_btn2:
+        cancel_clicked = st.button(
+            "Batal",
+            use_container_width=True
+        )
+
+    if cancel_clicked:
+        st.session_state.show_form = False
+        st.rerun()
+
+    if save_clicked:
+
+        if not new_name.strip() or not new_link.strip():
+            st.warning("Nama spreadsheet dan link wajib diisi!")
+
+        else:
+
+            try:
+
+                spreadsheet_id = new_link.split("/d/")[1].split("/")[0]
+
+                gid = "0"
+
+                if "gid=" in new_link:
+                    gid = new_link.split("gid=")[1].split("&")[0]
+
+                csv_url = (
+                    f"https://docs.google.com/spreadsheets/d/"
+                    f"{spreadsheet_id}/export?format=csv&gid={gid}"
+                )
+
+                # Coba baca dulu supaya dipastikan valid
+                pd.read_csv(csv_url)
+
+            except Exception:
+                st.error(
+                    "Spreadsheet tidak dapat dibaca. Pastikan link benar dan spreadsheet dapat diakses publik!"
+                )
+                st.stop()
+
+            SPREADSHEETS[new_name] = csv_url
+            save_spreadsheets(SPREADSHEETS)
+
+            st.session_state.show_form = False
+
+            st.success("Spreadsheet berhasil ditambahkan!")
+
+            st.rerun()
+
+    st.stop()
+
+# PILIH SPREADSHEET
+if len(SPREADSHEETS) == 0:
+    st.warning("Belum ada spreadsheet yang tersimpan!")
+    st.stop()
+
 selected_sheet = st.selectbox(
     "Pilih Spreadsheet",
     list(SPREADSHEETS.keys())
 )
 
-# INFO BOX
+# INFO
 st.info(
     "Kolom yang dianalisis otomatis: "
     "Sumber Informasi • Jenjang Pendidikan • Provinsi • Tanggal Daftar"
 )
 
-# TARGET PENDAFTAR
-target_pendaftar = st.number_input(
-    "Target Pendaftar",
-    min_value=1,
-    value=1000,
-    step=100
-)
-
-# PROCESS FILE
+# LOAD DATA
 try:
+
     url = SPREADSHEETS[selected_sheet]
 
     df = pd.read_csv(url)
 
     total_data = len(df)
 
+    # PILIH EVENT
     event_list = (
         df["event_name"]
         .dropna()
@@ -244,15 +351,54 @@ try:
         event_list
     )
 
-    df_filtered = df[df["event_name"] == selected_event]
+    df_event = df[df["event_name"] == selected_event].copy()
 
-    st.success(
-        f"Total Spreadsheet: {total_data} baris | "
-        f"Event '{selected_event}': {len(df_filtered)} baris"
+    # PILIH TANGGAL
+    df_event["timestamp"] = pd.to_datetime(
+        df_event["timestamp"],
+        errors="coerce"
     )
 
-    st.session_state["data"] = df_filtered
+    min_date = df_event["timestamp"].min().date()
+    max_date = df_event["timestamp"].max().date()
 
+    selected_dates = st.date_input(
+        "Rentang Tanggal",
+        value=(min_date, max_date),
+        min_value=min_date,
+        max_value=max_date
+    )
+
+    if len(selected_dates) == 2:
+
+        start_date, end_date = selected_dates
+
+        df_filtered = df_event[
+            (df_event["timestamp"].dt.date >= start_date)
+            &
+            (df_event["timestamp"].dt.date <= end_date)
+        ].copy()
+
+    else:
+
+        df_filtered = df_event.copy()
+
+    # TARGET PENDAFTAR
+    target_pendaftar = st.number_input(
+        "Target Pendaftar",
+        min_value=1,
+        value=1000,
+        step=100
+    )
+
+    # INFORMASI DATA
+    st.success(
+        f"Total Spreadsheet: {total_data} baris | "
+        f"Event '{selected_event}': {len(df_event)} baris | "
+        f"Periode Dipilih: {len(df_filtered)} baris"
+    )
+
+    # PREVIEW
     st.markdown("""
     <p style="
         font-size:14px;
@@ -270,11 +416,13 @@ try:
         hide_index=True
     )
 
+    # GENERATE
     if st.button(
         "Generate Dashboard",
         use_container_width=True,
         type="primary"
     ):
+
         st.session_state["data"] = df_filtered
         st.session_state["file_name"] = selected_sheet
         st.session_state["target"] = target_pendaftar
