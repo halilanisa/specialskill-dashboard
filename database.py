@@ -1,130 +1,77 @@
-import sqlite3
+import io
 import pandas as pd
 from datetime import datetime
-import io
 
-DB_NAME = "history.db"
+from supabase_client import get_client
 
-
-def get_connection():
-    return sqlite3.connect(DB_NAME)
+TABLE_NAME = "dashboard_history"
 
 
 def init_db():
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS dashboard_history (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            event_name TEXT,
-            file_name TEXT,
-            periode TEXT,
-            target INTEGER,
-            total_pendaftar INTEGER,
-            created_at TEXT,
-            data_json TEXT
-        )
-    """)
-
-    conn.commit()
-    conn.close()
+    pass
 
 
-def save_dashboard(
-    event_name,
-    file_name,
-    periode,
-    target,
-    df
-):
-    init_db()
+def save_dashboard(event_name, file_name, periode, target, df):
+    client = get_client()
 
-    conn = get_connection()
-    cursor = conn.cursor()
+    payload = {
+        "event_name": event_name,
+        "file_name": file_name,
+        "periode": periode,
+        "target": int(target),
+        "total_pendaftar": len(df),
+        "created_at": datetime.now().strftime("%d %b %Y %H:%M"),
+        "data_json": df.to_json(orient="records"),
+    }
 
-    cursor.execute("""
-        INSERT INTO dashboard_history(
-            event_name,
-            file_name,
-            periode,
-            target,
-            total_pendaftar,
-            created_at,
-            data_json
-        )
-        VALUES(?,?,?,?,?,?,?)
-    """, (
-        event_name,
-        file_name,
-        periode,
-        target,
-        len(df),
-        datetime.now().strftime("%d %b %Y %H:%M"),
-        df.to_json(orient="records")
-    ))
-
-    conn.commit()
-    conn.close()
+    client.table(TABLE_NAME).insert(payload).execute()
 
 
 def get_history():
-    init_db()
+    client = get_client()
 
-    conn = get_connection()
+    response = (
+        client.table(TABLE_NAME)
+        .select(
+            "id, event_name, file_name, periode, "
+            "target, total_pendaftar, created_at"
+        )
+        .order("id", desc=True)
+        .execute()
+    )
 
-    df = pd.read_sql("""
-        SELECT *
-        FROM dashboard_history
-        ORDER BY id DESC
-    """, conn)
-
-    conn.close()
-
-    return df
+    return pd.DataFrame(response.data)
 
 
 def load_dashboard(history_id):
-    init_db()
+    client = get_client()
 
-    conn = get_connection()
-    cursor = conn.cursor()
+    response = (
+        client.table(TABLE_NAME)
+        .select("*")
+        .eq("id", history_id)
+        .maybe_single()
+        .execute()
+    )
 
-    cursor.execute("""
-        SELECT *
-        FROM dashboard_history
-        WHERE id=?
-    """, (history_id,))
-
-    row = cursor.fetchone()
-
-    conn.close()
+    row = response.data if response else None
 
     if row is None:
         return None
 
     return {
-        "id": row[0],
-        "event_name": row[1],
-        "file_name": row[2],
-        "periode": row[3],
-        "target": row[4],
-        "total_pendaftar": row[5],
-        "created_at": row[6],
-        "data": pd.read_json(io.StringIO(row[7]))
+        "id": row["id"],
+        "event_name": row["event_name"],
+        "file_name": row["file_name"],
+        "periode": row["periode"],
+        "target": row["target"],
+        "total_pendaftar": row["total_pendaftar"],
+        "created_at": row["created_at"],
+        "data": pd.read_json(io.StringIO(row["data_json"])),
     }
 
 
 def delete_dashboard(history_id):
-    init_db()
+    client = get_client()
 
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        DELETE FROM dashboard_history
-        WHERE id=?
-    """, (history_id,))
-
-    conn.commit()
-    conn.close()
+    client.table(TABLE_NAME).delete().eq("id", history_id).execute()

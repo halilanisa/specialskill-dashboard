@@ -1,29 +1,8 @@
 import streamlit as st
 import pandas as pd
 import base64
-import json
-import os
-
-JSON_FILE = "spreadsheets.json"
-
-DEFAULT_SPREADSHEETS = {
-    "Master Data (Free Event)": "https://docs.google.com/spreadsheets/d/14dyD16lRgLZxBLAHiE5BLXN2XAyJyWDAK59KTfbnBaM/export?format=csv&gid=854838440"
-}
-
-def load_spreadsheets():
-    if not os.path.exists(JSON_FILE):
-
-        with open(JSON_FILE, "w") as f:
-            json.dump(DEFAULT_SPREADSHEETS, f, indent=4)
-
-        return DEFAULT_SPREADSHEETS
-
-    with open(JSON_FILE, "r") as f:
-        return json.load(f)
-
-def save_spreadsheets(data):
-    with open(JSON_FILE, "w") as f:
-        json.dump(data, f, indent=4)
+from column_mapping import normalize_columns, detect_missing_required_columns
+from spreadsheets_store import load_spreadsheets, add_spreadsheet, delete_spreadsheet
 
 SPREADSHEETS = load_spreadsheets()
 
@@ -302,8 +281,7 @@ if st.session_state.show_form:
                 )
                 st.stop()
 
-            SPREADSHEETS[new_name] = csv_url
-            save_spreadsheets(SPREADSHEETS)
+            add_spreadsheet(new_name, csv_url)
 
             st.session_state.show_form = False
 
@@ -318,10 +296,50 @@ if len(SPREADSHEETS) == 0:
     st.warning("Belum ada spreadsheet yang tersimpan!")
     st.stop()
 
-selected_sheet = st.selectbox(
-    "Pilih Spreadsheet",
-    list(SPREADSHEETS.keys())
-)
+col_select, col_delete = st.columns([5, 1])
+
+with col_select:
+    selected_sheet = st.selectbox(
+        "Pilih Spreadsheet",
+        list(SPREADSHEETS.keys())
+    )
+
+with col_delete:
+    st.markdown("<div style='height:1.8rem'></div>", unsafe_allow_html=True)
+    if st.button(
+        "Hapus",
+        icon=":material/delete:",
+        use_container_width=True
+    ):
+        st.session_state.confirm_delete = selected_sheet
+
+# KONFIRMASI HAPUS SPREADSHEET
+if "confirm_delete" not in st.session_state:
+    st.session_state.confirm_delete = None
+
+if st.session_state.confirm_delete == selected_sheet:
+
+    st.warning(
+        f"Yakin mau hapus spreadsheet **{selected_sheet}** dari daftar? "
+        "Dashboard yang sudah pernah disimpan dari spreadsheet ini "
+        "tidak akan ikut terhapus (histori tetap aman)."
+    )
+
+    col_yes, col_no, _ = st.columns([1, 1, 8])
+
+    with col_yes:
+        if st.button("Ya, Hapus", use_container_width=True):
+            delete_spreadsheet(selected_sheet)
+            st.session_state.confirm_delete = None
+            st.success("Spreadsheet berhasil dihapus!")
+            st.rerun()
+
+    with col_no:
+        if st.button("Batal", use_container_width=True, key="cancel_delete_sheet"):
+            st.session_state.confirm_delete = None
+            st.rerun()
+
+    st.stop()
 
 # INFO
 st.info(
@@ -335,6 +353,23 @@ try:
     url = SPREADSHEETS[selected_sheet]
 
     df = pd.read_csv(url)
+
+    # NORMALISASI KOLOM
+    # Menyamakan nama kolom dari berbagai format spreadsheet (mis. data
+    # pendaftaran biasa ATAU data transaksi dari payment gateway) menjadi
+    # nama kolom standar (event_name, timestamp, source_info, dst).
+    df = normalize_columns(df)
+
+    missing_cols = detect_missing_required_columns(df)
+
+    if missing_cols:
+        st.error(
+            "Format spreadsheet tidak dikenali. Kolom berikut tidak "
+            f"ditemukan/tidak bisa dipetakan: {', '.join(missing_cols)}. "
+            "Cek nama header di spreadsheet, atau tambahkan aliasnya "
+            "di column_mapping.py."
+        )
+        st.stop()
 
     total_data = len(df)
 

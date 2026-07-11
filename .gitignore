@@ -1,0 +1,12 @@
+# Secrets -- JANGAN pernah di-commit
+.streamlit/secrets.toml
+
+# File lokal lama (sudah digantikan Supabase, tidak dipakai lagi)
+history.db
+spreadsheets.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
