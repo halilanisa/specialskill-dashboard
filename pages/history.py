@@ -146,9 +146,4 @@ for _, row in history.iterrows():
             ):
 
                 delete_dashboard(row["id"])
-
-                st.success("Dashboard berhasil dihapus!")
-
-                time.sleep(0.5)
-
                 st.rerun()
