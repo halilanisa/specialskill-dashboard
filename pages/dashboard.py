@@ -320,9 +320,9 @@ if "confirm_delete" not in st.session_state:
 if st.session_state.confirm_delete == selected_sheet:
 
     st.warning(
-        f"Yakin mau hapus spreadsheet **{selected_sheet}** dari daftar? "
+        f"Yakin ingin menghapus spreadsheet **{selected_sheet}** dari daftar? "
         "Dashboard yang sudah pernah disimpan dari spreadsheet ini "
-        "tidak akan ikut terhapus (histori tetap aman)."
+        "tidak akan ikut terhapus (histori tetap aman)"
     )
 
     col_yes, col_no, _ = st.columns([1, 1, 8])
@@ -331,7 +331,6 @@ if st.session_state.confirm_delete == selected_sheet:
         if st.button("Ya, Hapus", use_container_width=True):
             delete_spreadsheet(selected_sheet)
             st.session_state.confirm_delete = None
-            st.success("Spreadsheet berhasil dihapus!")
             st.rerun()
 
     with col_no:
@@ -354,10 +353,6 @@ try:
 
     df = pd.read_csv(url)
 
-    # NORMALISASI KOLOM
-    # Menyamakan nama kolom dari berbagai format spreadsheet (mis. data
-    # pendaftaran biasa ATAU data transaksi dari payment gateway) menjadi
-    # nama kolom standar (event_name, timestamp, source_info, dst).
     df = normalize_columns(df)
 
     missing_cols = detect_missing_required_columns(df)
