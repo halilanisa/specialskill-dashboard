@@ -149,13 +149,6 @@ with col2:
 
         st.session_state.saved = True
 
-        msg = st.empty()
-        msg.success("Berhasil disimpan!")
-
-        time.sleep(0.5)
-
-        msg.empty()
-
         st.rerun()
 
 with col3:
