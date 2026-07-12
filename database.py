@@ -42,7 +42,42 @@ def get_history():
         .execute()
     )
 
-    return pd.DataFrame(response.data)
+    rows = response.data or []
+
+    if not rows:
+        return pd.DataFrame(rows)
+
+    # Hitung ulang "Total Pendaftar" secara live dari spreadsheet sumbernya,
+    # supaya kartu di halaman History juga selalu sesuai data terbaru
+    # (bukan angka beku saat pertama kali disimpan).
+    spreadsheets = load_spreadsheets()
+    df_cache = {}
+
+    for row in rows:
+        file_name = row["file_name"]
+        url = spreadsheets.get(file_name)
+
+        if url is None:
+            # Spreadsheet sudah dihapus dari daftar -> biarkan angka lama
+            continue
+
+        if file_name not in df_cache:
+            try:
+                df_live = pd.read_csv(url)
+                df_live = normalize_columns(df_live)
+            except Exception:
+                df_live = None
+
+            df_cache[file_name] = df_live
+
+        df_live = df_cache[file_name]
+
+        if df_live is not None and "event_name" in df_live.columns:
+            row["total_pendaftar"] = int(
+                (df_live["event_name"] == row["event_name"]).sum()
+            )
+
+    return pd.DataFrame(rows)
 
 
 def load_dashboard(history_id):
