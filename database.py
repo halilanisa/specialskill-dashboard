@@ -3,6 +3,8 @@ import pandas as pd
 from datetime import datetime
 
 from supabase_client import get_client
+from spreadsheets_store import load_spreadsheets
+from column_mapping import normalize_columns
 
 TABLE_NAME = "dashboard_history"
 
@@ -59,15 +61,37 @@ def load_dashboard(history_id):
     if row is None:
         return None
 
+    # Coba ambil data TERBARU langsung dari spreadsheet sumbernya,
+    # bukan dari data_json lama (yang cuma snapshot saat pertama disimpan).
+    df = None
+
+    spreadsheets = load_spreadsheets()
+    url = spreadsheets.get(row["file_name"])
+
+    if url is not None:
+        try:
+            df_live = pd.read_csv(url)
+            df_live = normalize_columns(df_live)
+            df = df_live[
+                df_live["event_name"] == row["event_name"]
+            ].copy()
+        except Exception:
+            df = None
+
+    # Fallback: kalau spreadsheet sudah dihapus dari daftar / gagal diakses,
+    # pakai snapshot lama supaya dashboard tetap bisa dibuka.
+    if df is None:
+        df = pd.read_json(io.StringIO(row["data_json"]))
+
     return {
         "id": row["id"],
         "event_name": row["event_name"],
         "file_name": row["file_name"],
         "periode": row["periode"],
         "target": row["target"],
-        "total_pendaftar": row["total_pendaftar"],
+        "total_pendaftar": len(df),
         "created_at": row["created_at"],
-        "data": pd.read_json(io.StringIO(row["data_json"])),
+        "data": df,
     }
 
 

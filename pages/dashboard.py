@@ -383,35 +383,13 @@ try:
 
     df_event = df[df["event_name"] == selected_event].copy()
 
-    # PILIH TANGGAL
     df_event["timestamp"] = pd.to_datetime(
         df_event["timestamp"],
         errors="coerce"
     )
 
-    min_date = df_event["timestamp"].min().date()
-    max_date = df_event["timestamp"].max().date()
-
-    selected_dates = st.date_input(
-        "Rentang Tanggal",
-        value=(min_date, max_date),
-        min_value=min_date,
-        max_value=max_date
-    )
-
-    if len(selected_dates) == 2:
-
-        start_date, end_date = selected_dates
-
-        df_filtered = df_event[
-            (df_event["timestamp"].dt.date >= start_date)
-            &
-            (df_event["timestamp"].dt.date <= end_date)
-        ].copy()
-
-    else:
-
-        df_filtered = df_event.copy()
+    # Tidak ada filter tanggal lagi -> selalu pakai seluruh data event ini
+    df_filtered = df_event.copy()
 
     # TARGET PENDAFTAR
     target_pendaftar = st.number_input(
