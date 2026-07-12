@@ -91,10 +91,7 @@ persen = round(
     1
 )
 
-if "event_name" in df.columns:
-    event_name = str(df["event_name"].iloc[0])
-else:
-    event_name = "EVENT"
+event_name = st.session_state.get("event_name", "EVENT")
 
 if "timestamp" in df.columns:
 

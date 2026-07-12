@@ -228,11 +228,15 @@ if st.session_state.show_form:
         placeholder="Contoh: Webinar AI"
     )
 
+    dashboard_title = st.text_input(
+        "Judul Dashboard / Nama Event",
+        placeholder="Contoh: Free Class SQL Batch 8"
+    )
+
     new_link = st.text_input(
         "Link Google Spreadsheet",
         placeholder="https://docs.google.com/spreadsheets/..."
     )
-
     col_btn1, col_btn2, _ = st.columns([1, 1, 8])
 
     with col_btn1:
@@ -253,8 +257,12 @@ if st.session_state.show_form:
 
     if save_clicked:
 
-        if not new_name.strip() or not new_link.strip():
-            st.warning("Nama spreadsheet dan link wajib diisi!")
+        if (
+            not new_name.strip()
+            or not dashboard_title.strip()
+            or not new_link.strip()
+        ):
+            st.warning("Semua field wajib diisi!")
 
         else:
 
@@ -281,7 +289,11 @@ if st.session_state.show_form:
                 )
                 st.stop()
 
-            add_spreadsheet(new_name, csv_url)
+            add_spreadsheet(
+                new_name,
+                dashboard_title,
+                csv_url
+            )
 
             st.session_state.show_form = False
 
@@ -349,7 +361,11 @@ st.info(
 # LOAD DATA
 try:
 
-    url = SPREADSHEETS[selected_sheet]
+    sheet_info = SPREADSHEETS[selected_sheet]
+
+    url = sheet_info["url"]
+
+    dashboard_title = sheet_info["dashboard_title"]
 
     df = pd.read_csv(url)
 
@@ -369,19 +385,27 @@ try:
     total_data = len(df)
 
     # PILIH EVENT
-    event_list = (
-        df["event_name"]
-        .dropna()
-        .sort_values()
-        .unique()
-    )
+    if selected_sheet == "Master Data (Free Event)":
 
-    selected_event = st.selectbox(
-        "Pilih Event",
-        event_list
-    )
+        event_list = (
+            df["event_name"]
+            .dropna()
+            .sort_values()
+            .unique()
+        )
 
-    df_event = df[df["event_name"] == selected_event].copy()
+        selected_event = st.selectbox(
+            "Pilih Event",
+            event_list
+        )
+
+        df_event = df[df["event_name"] == selected_event].copy()
+
+    else:
+
+        selected_event = dashboard_title
+
+        df_event = df.copy()
 
     df_event["timestamp"] = pd.to_datetime(
         df_event["timestamp"],
@@ -400,11 +424,20 @@ try:
     )
 
     # INFORMASI DATA
-    st.success(
-        f"Total Spreadsheet: {total_data} baris | "
-        f"Event '{selected_event}': {len(df_event)} baris | "
-        f"Periode Dipilih: {len(df_filtered)} baris"
-    )
+    if selected_sheet == "Master Data (Free Event)":
+
+        st.success(
+            f"Total Spreadsheet: {total_data} baris | "
+            f"Event '{selected_event}': {len(df_event)} baris | "
+            f"Periode Dipilih: {len(df_filtered)} baris"
+        )
+
+    else:
+
+        st.success(
+            f"Total Spreadsheet: {total_data} baris | "
+            f"Periode Dipilih: {len(df_filtered)} baris"
+        )
 
     # PREVIEW
     st.markdown("""

@@ -3,69 +3,90 @@ import pandas as pd
 
 
 ALIASES = {
+
     "timestamp": [
         "timestamp",
         "transaction created at",
         "tanggal daftar",
         "tanggal",
     ],
+
     "email": [
         "email",
         "customer email",
     ],
+
     "nama": [
         "nama",
+        "nama lengkap",
         "customer name",
     ],
+
     "provinsi": [
         "provinsi",
     ],
+
     "jenjang_pendidikan": [
-        "jenjang_pendidikan",
         "jenjang pendidikan",
+        "jenjang_pendidikan",
     ],
+
     "asal_instansi": [
         "asal_instansi",
         "asal sekolah/universitas/pekerjaan",
         "asal sekolah universitas pekerjaan",
     ],
+
     "no_wa": [
         "no_wa",
         "customer mobile",
-        "no whatsapp",
         "nomor whatsapp",
+        "nomor whatsapp aktif",
+        "no whatsapp",
     ],
+
     "akun_instagram": [
-        "akun_instagram",
         "akun instagram",
+        "akun_instagram",
     ],
+
     "is_follow_ig": [
         "is_follow_ig",
+        "sudah follow akun instagram @specialskill.id ?",
+        "sudah follow akun instagram @specialskill.jobs ?",
         "follow, like, dan tag 3 teman",
         "follow like dan tag 3 teman",
     ],
+
+    "is_like_and_share": [
+        "is_like_and_share",
+        "like, share, dan tag 3 orang teman pada postingan pamflet acara ini di instagram @specialskill.id",
+        "share pamflet kegiatan di media sosial",
+    ],
+
     "is_follow_tiktok": [
         "is_follow_tiktok",
     ],
-    "is_like_and_share": [
-        "is_like_and_share",
-        "share pamflet kegiatan di media sosial",
-    ],
+
     "is_ever_join_ss": [
         "is_ever_join_ss",
     ],
+
     "source_info": [
         "source_info",
         "sumber informasi",
     ],
+
     "id_event": [
         "id_event",
         "transaction id",
     ],
+
     "event_type": [
         "event_type",
         "tipe produk",
     ],
+
     "event_name": [
         "event_name",
         "nama produk",
@@ -127,5 +148,5 @@ def normalize_columns(df):
     return df
 
 
-def detect_missing_required_columns(df, required=("event_name", "timestamp")):
+def detect_missing_required_columns(df, required=("timestamp",)):
     return [col for col in required if col not in df.columns]
