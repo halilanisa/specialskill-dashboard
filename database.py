@@ -47,24 +47,27 @@ def get_history():
     if not rows:
         return pd.DataFrame(rows)
 
-    # Hitung ulang "Total Pendaftar" secara live dari spreadsheet sumbernya,
-    # supaya kartu di halaman History juga selalu sesuai data terbaru
-    # (bukan angka beku saat pertama kali disimpan).
     spreadsheets = load_spreadsheets()
     df_cache = {}
 
     for row in rows:
         file_name = row["file_name"]
-        url = spreadsheets.get(file_name)
 
-        if url is None:
-            # Spreadsheet sudah dihapus dari daftar -> biarkan angka lama
+        sheet = spreadsheets.get(file_name)
+
+        if sheet is None:
             continue
+
+        url = sheet["url"]
 
         if file_name not in df_cache:
             try:
-                df_live = pd.read_csv(url)
-                df_live = normalize_columns(df_live)
+                if "event_name" in df_live.columns:
+                    row["total_pendaftar"] = int(
+                        (df_live["event_name"] == row["event_name"]).sum()
+                    )
+                else:
+                    row["total_pendaftar"] = len(df_live)
             except Exception:
                 df_live = None
 
@@ -96,25 +99,29 @@ def load_dashboard(history_id):
     if row is None:
         return None
 
-    # Coba ambil data TERBARU langsung dari spreadsheet sumbernya,
-    # bukan dari data_json lama (yang cuma snapshot saat pertama disimpan).
     df = None
 
     spreadsheets = load_spreadsheets()
-    url = spreadsheets.get(row["file_name"])
 
-    if url is not None:
+    sheet = spreadsheets.get(row["file_name"])
+
+    if sheet is not None:
         try:
+            url = sheet["url"]
+
             df_live = pd.read_csv(url)
             df_live = normalize_columns(df_live)
-            df = df_live[
-                df_live["event_name"] == row["event_name"]
-            ].copy()
+
+            if "event_name" in df_live.columns:
+                df = df_live[
+                    df_live["event_name"] == row["event_name"]
+                ].copy()
+            else:
+                df = df_live.copy()
+
         except Exception:
             df = None
 
-    # Fallback: kalau spreadsheet sudah dihapus dari daftar / gagal diakses,
-    # pakai snapshot lama supaya dashboard tetap bisa dibuka.
     if df is None:
         df = pd.read_json(io.StringIO(row["data_json"]))
 
@@ -128,7 +135,6 @@ def load_dashboard(history_id):
         "created_at": row["created_at"],
         "data": df,
     }
-
 
 def delete_dashboard(history_id):
     client = get_client()
