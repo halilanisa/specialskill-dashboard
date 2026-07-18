@@ -29,6 +29,46 @@ def save_dashboard(event_name, file_name, periode, target, df):
     client.table(TABLE_NAME).insert(payload).execute()
 
 
+def save_or_update_dashboard(event_name, file_name, periode, target, df):
+    """Simpan dashboard baru, atau update dashboard yang sudah ada
+    untuk kombinasi file_name + event_name yang sama (tidak duplikat)."""
+
+    client = get_client()
+
+    payload = {
+        "event_name": event_name,
+        "file_name": file_name,
+        "periode": periode,
+        "target": int(target),
+        "total_pendaftar": len(df),
+        "created_at": datetime.now().strftime("%d %b %Y %H:%M"),
+        "data_json": df.to_json(orient="records"),
+    }
+
+    existing = (
+        client.table(TABLE_NAME)
+        .select("id")
+        .eq("file_name", file_name)
+        .eq("event_name", event_name)
+        .limit(1)
+        .execute()
+    )
+
+    rows = existing.data or []
+
+    if rows:
+        history_id = rows[0]["id"]
+        client.table(TABLE_NAME).update(payload).eq("id", history_id).execute()
+        return history_id
+
+    result = client.table(TABLE_NAME).insert(payload).execute()
+
+    if result.data:
+        return result.data[0]["id"]
+
+    return None
+
+
 def get_history():
     client = get_client()
 
@@ -62,12 +102,8 @@ def get_history():
 
         if file_name not in df_cache:
             try:
-                if "event_name" in df_live.columns:
-                    row["total_pendaftar"] = int(
-                        (df_live["event_name"] == row["event_name"]).sum()
-                    )
-                else:
-                    row["total_pendaftar"] = len(df_live)
+                df_live = pd.read_csv(url)
+                df_live = normalize_columns(df_live)
             except Exception:
                 df_live = None
 
@@ -75,10 +111,15 @@ def get_history():
 
         df_live = df_cache[file_name]
 
-        if df_live is not None and "event_name" in df_live.columns:
+        if df_live is None:
+            continue
+
+        if "event_name" in df_live.columns:
             row["total_pendaftar"] = int(
                 (df_live["event_name"] == row["event_name"]).sum()
             )
+        else:
+            row["total_pendaftar"] = len(df_live)
 
     return pd.DataFrame(rows)
 

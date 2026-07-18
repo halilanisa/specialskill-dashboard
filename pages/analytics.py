@@ -2,8 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import base64
-import textwrap  
-from database import save_dashboard
+import textwrap
 
 # CONFIG
 st.set_page_config(
@@ -34,11 +33,11 @@ st.markdown("""
 <style>
 
 .stApp{
-    background:white !important;
+    background:#F4F7FC !important;
 }
 
 [data-testid="stAppViewContainer"]{
-    background:white !important;
+    background:#F4F7FC !important;
 }
 
 #MainMenu,
@@ -53,7 +52,8 @@ header{
 
 .block-container{
     padding-top:1rem;
-    max-width:100%;
+    padding-bottom:2.5rem;
+    max-width:1180px;
 }
 
 .card{
@@ -66,6 +66,21 @@ header{
 
 div[data-testid="stMarkdownContainer"] p{
     margin:0;
+}
+
+/* Header buttons (kembali / keluar) */
+.stButton button{
+    background:white !important;
+    color:#0B2B6B !important;
+    border:1px solid #D1D5DB !important;
+    border-radius:12px !important;
+    font-weight:700 !important;
+}
+
+.stButton button:hover{
+    background:#F3F4F6 !important;
+    color:#0B2B6B !important;
+    border:1px solid #CBD5E1 !important;
 }
 
 </style>
@@ -113,7 +128,7 @@ file_name = st.session_state.get(
 )
 
 # HEADER
-col1, col2, col3, col4, col5 = st.columns([6, 2, 2, 1, 1])
+col1, col2, col3 = st.columns([10, 1, 1])
 
 with col1:
     st.markdown(f"""
@@ -128,40 +143,15 @@ with col1:
     </div>
     """, unsafe_allow_html=True)
 
-import time
-
 with col2:
     if st.button(
-        "Simpan Dashboard",
-        use_container_width=True,
-        disabled=st.session_state.saved
-    ):
-        save_dashboard(
-            event_name=event_name,
-            file_name=file_name,
-            periode=periode,
-            target=target,
-            df=df
-        )
-
-        st.session_state.saved = True
-
-        st.rerun()
-
-with col3:
-    if st.button("Ganti File", use_container_width=True):
-        st.session_state.saved = False
-        st.switch_page("pages/dashboard.py")
-
-with col4:
-    if st.button(
         "",
-        icon=":material/history:",
+        icon=":material/arrow_back:",
         use_container_width=True
     ):
-        st.switch_page("pages/history.py")
+        st.switch_page("pages/dashboard.py")
 
-with col5:
+with col3:
     if st.button(
         "",
         icon=":material/logout:",
@@ -181,28 +171,29 @@ st.markdown(
 f"""
 <div style="
 background:#ffffff;
-border-radius:18px;
-padding:28px 40px;
-margin-bottom:24px;
+border-radius:22px;
+padding:30px 40px;
+margin-bottom:22px;
 border-top:7px solid #4A82E8;
-box-shadow:0 3px 12px rgba(0,0,0,.08);
+box-shadow:0 12px 30px rgba(15,23,42,.08);
 text-align:center;
 ">
 
 <div style="
-font-size:14px;
-font-weight:600;
+font-size:12.5px;
+font-weight:700;
 color:#4A82E8;
-letter-spacing:2px;
+letter-spacing:3px;
 text-transform:uppercase;
-margin-bottom:10px;">
+margin-bottom:12px;">
 Dashboard Pendaftaran
 </div>
 
 <div style="
 font-size:38px;
-font-weight:700;
-color:#1E293B;
+font-weight:800;
+color:#0B2B6B;
+letter-spacing:-.5px;
 margin-bottom:14px;">
 {event_name}
 </div>
@@ -225,37 +216,39 @@ unsafe_allow_html=True
 
 c1, c2, c3 = st.columns(3)
 
-def metric_card(title, value, color):
+def metric_card(title, value, gradient):
     return f"""
 <div style="
-background:white;
-border-left:8px solid {color};
+background:{gradient};
 border-radius:18px;
 padding:24px;
-box-shadow:0 3px 12px rgba(0,0,0,.08);
+box-shadow:0 10px 26px rgba(15,23,42,.16);
 height:150px;
 display:flex;
 flex-direction:column;
 justify-content:center;
 align-items:center;
 text-align:center;
+color:#ffffff;
 ">
 
-<h4 style="
-margin:0;
-color:#6B7280;
-font-size:18px;
-font-weight:600;">
+<div style="
+color:#ffffff;
+opacity:.85;
+font-size:12.5px;
+font-weight:700;
+letter-spacing:1px;
+text-transform:uppercase;">
 {title}
-</h4>
+</div>
 
-<h2 style="
-margin:16px 0 0 0;
-color:{color};
-font-size:42px;
-font-weight:700;">
+<div style="
+margin:14px 0 0 0;
+color:#ffffff;
+font-size:38px;
+font-weight:800;">
 {value}
-</h2>
+</div>
 
 </div>
 """
@@ -265,7 +258,7 @@ with c1:
         metric_card(
             "Target Peserta",
             f"{target:,}",
-            "#F4B400"
+            "linear-gradient(135deg,#F4A100,#C9720A)"
         ),
         unsafe_allow_html=True
     )
@@ -275,7 +268,7 @@ with c2:
         metric_card(
             "Total Pendaftar",
             f"{total_pendaftar:,}",
-            "#10B981"
+            "linear-gradient(135deg,#0EA5A0,#0B7A87)"
         ),
         unsafe_allow_html=True
     )
@@ -285,14 +278,16 @@ with c3:
         metric_card(
             "Capaian Target",
             f"{persen:.1f}%",
-            "#FF6F00"
+            "linear-gradient(135deg,#0B2B6B,#2F5FD6)"
         ),
         unsafe_allow_html=True
     )
 
 st.write("")
 st.markdown(
-    f"**Sumber Data:** {file_name}"
+    f'<span style="color:#7A8699;font-size:14px;">'
+    f'<b style="color:#5A6B85;">Sumber Data:</b> {file_name}</span>',
+    unsafe_allow_html=True
 )
 
 # SUMBER INFORMASI
