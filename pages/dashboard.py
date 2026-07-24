@@ -117,20 +117,7 @@ footer{
     font-weight:500;
 }
 
-/* ---------- Add spreadsheet CTA button ---------- */
-div[class*="st-key-add_btn_wrap"] .stButton button{
-    background:linear-gradient(90deg,#0B2B6B,#3167E0) !important;
-    color:#fff !important;
-    border:none !important;
-    padding:0 28px !important;
-    box-shadow:0 10px 22px rgba(23,62,147,.28) !important;
-    letter-spacing:.2px;
-}
-
-div[class*="st-key-add_btn_wrap"] .stButton button:hover{
-    background:linear-gradient(90deg,#0A2560,#2857C7) !important;
-    box-shadow:0 12px 26px rgba(23,62,147,.36) !important;
-}
+/* Tambah Spreadsheet & Analisis Sentimen pakai style tombol polos (generic) */
 
 /* ---------- Form card ---------- */
 div[class*="st-key-add_form_card"]{
@@ -199,6 +186,90 @@ div[class*="st-key-add_form_card"] h3{
     background:#F3F4F6 !important;
     color:#0B2B6B !important;
     border:1px solid #CBD5E1 !important;
+}
+
+/* ---------- Top action buttons: Tambah Spreadsheet & Analisis Sentimen ---------- */
+div[class*="st-key-add_btn_wrap"],
+div[class*="st-key-sentiment_btn_wrap"]{
+    height:100%;
+}
+
+div[class*="st-key-add_btn_wrap"] .stButton button,
+div[class*="st-key-sentiment_btn_wrap"] .stButton button{
+    height:56px;
+    width:100%;
+    box-sizing:border-box !important;
+    padding:0 18px !important;
+    font-size:15px !important;
+    font-weight:700 !important;
+    color:#0B2B6B !important;
+    white-space:nowrap !important;
+    background:#fff !important;
+    border:1px solid #E7EAF3 !important;
+    border-radius:16px !important;
+    box-shadow:0 4px 14px rgba(15,23,42,.05);
+    display:flex !important;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    overflow:hidden !important;
+    transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+
+div[class*="st-key-add_btn_wrap"] .stButton button > div,
+div[class*="st-key-sentiment_btn_wrap"] .stButton button > div{
+    display:flex !important;
+    align-items:center;
+    gap:8px;
+    min-width:0;
+    overflow:hidden;
+}
+
+div[class*="st-key-add_btn_wrap"] .stButton button:hover,
+div[class*="st-key-sentiment_btn_wrap"] .stButton button:hover{
+    color:#0B2B6B !important;
+    background:#fff !important;
+    transform:translateY(-3px);
+    box-shadow:0 14px 26px rgba(15,23,42,.10);
+}
+
+div[class*="st-key-add_btn_wrap"] .stButton button p,
+div[class*="st-key-sentiment_btn_wrap"] .stButton button p{
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    min-width:0;
+    margin:0 !important;
+}
+
+div[class*="st-key-add_btn_wrap"] .stButton button [data-testid="stIconMaterial"],
+div[class*="st-key-sentiment_btn_wrap"] .stButton button [data-testid="stIconMaterial"]{
+    width:26px;
+    height:26px;
+    border-radius:8px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-size:16px !important;
+    flex-shrink:0;
+}
+
+div[class*="st-key-add_btn_wrap"] .stButton button [data-testid="stIconMaterial"]{
+    background:#E3EBFF;
+    color:#2F5FD6;
+}
+
+div[class*="st-key-add_btn_wrap"] .stButton button:hover{
+    border:1px solid #C7D6FB !important;
+}
+
+div[class*="st-key-sentiment_btn_wrap"] .stButton button [data-testid="stIconMaterial"]{
+    background:#F3E8FF;
+    color:#7C3AED;
+}
+
+div[class*="st-key-sentiment_btn_wrap"] .stButton button:hover{
+    border:1px solid #DCC6FB !important;
 }
 
 /* Dataframe */
@@ -507,13 +578,27 @@ def read_sheet(url):
 if "show_form" not in st.session_state:
     st.session_state.show_form = False
 
-with st.container(key="add_btn_wrap"):
-    if st.button(
-        "Tambah Spreadsheet",
-        icon=":material/add:",
-        use_container_width=False
-    ):
-        st.session_state.show_form = True
+btn_col1, btn_col2, _ = st.columns([1.65, 1.65, 6.7])
+
+with btn_col1:
+    with st.container(key="add_btn_wrap"):
+        if st.button(
+            "Tambah",
+            icon=":material/add:",
+            use_container_width=True,
+            help="Tambah spreadsheet baru"
+        ):
+            st.session_state.show_form = True
+
+with btn_col2:
+    with st.container(key="sentiment_btn_wrap"):
+        if st.button(
+            "Sentimen",
+            icon=":material/psychology:",
+            use_container_width=True,
+            help="Buka analisis sentimen"
+        ):
+            st.switch_page("pages/sentiment.py")
 
 if st.session_state.show_form:
 
@@ -786,17 +871,32 @@ ACCENT_COLORS = ["#4A82E8", "#8B5CF6", "#0EA5A0", "#F4B400", "#FF6B81", "#06B6D4
 
 def pick_icon(event_name):
     name = str(event_name).lower()
-    if any(k in name for k in ["ui/ux", "ui", "ux", "design"]):
-        return "🎨"
-    if any(k in name for k in ["python", "sql", "data", "program", "coding"]):
+
+    if any(k in name for k in ["data analysis", "data"]):
+        return "📊"
+    
+    if any(k in name for k in ["machine learning", "machine", "ml"]):
+        return "🤖"
+    
+    if any(k in name for k in ["python", "pemrograman"]):
         return "💻"
-    if any(k in name for k in ["wordpress", "web"]):
+    
+    if any(k in name for k in ["wordpress", "web development"]):
         return "🌐"
-    if any(k in name for k in ["marketing", "sosial", "social", "digital"]):
+    
+    if any(k in name for k in ["graphic design", "figma", "design", "ui/ux", "ui", "ux"]):
+        return "🎨"
+    
+    if any(k in name for k in ["digital marketing", "marketing"]):
         return "📢"
-    if any(k in name for k in ["business", "bisnis", "socio", "wirausaha"]):
-        return "📈"
-    return "🎯"
+    
+    if any(k in name for k in ["mobile development", "kodular", "mobile"]):
+        return "📱"
+    
+    if any(k in name for k in ["free class", "free bootcamp", "intensive camp", "package", "premium", "regular"]):
+        return "🎓"
+    
+    return "🚀"
 
 
 if history.empty:
